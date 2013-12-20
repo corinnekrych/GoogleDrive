@@ -17,6 +17,7 @@
 
 #import <UIKit/UIKit.h>
 
-@interface AGViewController : UIViewController
-
+@interface AGViewController : UITableViewController <UITableViewDelegate, UITableViewDataSource>
+@property (nonatomic, strong) IBOutlet UITableView *tableView;
+@property (nonatomic, strong) NSMutableArray* documents;
 @end

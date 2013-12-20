@@ -25,18 +25,44 @@
 
 @implementation AGViewController {
     id<AGAuthzModule> _restAuthzModule;
+    NSMutableArray* _documents;
+}
+@synthesize documents = _documents;
+@synthesize tableView;
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    return [_documents count];
+}
+- (UITableViewCell *)tableView:(UITableView *)myTableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    static NSString *simpleTableIdentifier = @"DocumentCell";
+    
+    UITableViewCell *cell = [myTableView dequeueReusableCellWithIdentifier:simpleTableIdentifier];
+    
+    if (cell == nil) {
+        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:simpleTableIdentifier];
+    }
+    
+    cell.textLabel.text = [[_documents objectAtIndex:indexPath.row] objectForKey:@"title"];
+    return cell;
 }
 
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-	// Do any additional setup after loading the view, typically from a nib.
+    // Initialize pop-up warning to start OAuth2 authz
+    UIAlertView * alert = [[UIAlertView alloc] initWithTitle:@"Authorize GoogleDrive" message:@"Do you want to authorize GoogleDrive to access your Google Drive data? You will be redirected to Google login to authenticate and grant access." delegate:self cancelButtonTitle:@"ok" otherButtonTitles:nil];
+    alert.alertViewStyle = UIAlertViewStyleDefault;
+    [alert show];
+}
+
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex{
+    [self authorize:nil];
 }
 
 - (void)didReceiveMemoryWarning
 {
     [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
 }
 - (IBAction)authorize:(UIButton *)sender {
     AGAuthorizer* authorizer = [AGAuthorizer authorizer];
@@ -52,30 +78,39 @@
     }];
     
     [_restAuthzModule requestAccess:nil success:^(id object) {
-        NSLog(@"SUCCESS!!!");
-        
-        
-        
-        NSString* readGoogleDriveURL = @"https://www.googleapis.com/drive/v2/files";
-        
-        NSString *url = [NSString stringWithFormat:@"%@?access_token=%@", readGoogleDriveURL, object];
-        
-        AFHTTPClient* restClient = [[AFHTTPClient alloc] initWithBaseURL:[NSURL URLWithString:readGoogleDriveURL]];
-        
-        [restClient postPath:url parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject) {
-            
-              NSLog(@"Invoking successblock for List Google DRIVE....");
-            NSString* responseJSON = [[NSString alloc] initWithData:(NSData *)responseObject encoding:NSUTF8StringEncoding];
-            NSLog(@"=======> %@", responseJSON);
-        } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-
-                NSLog(@"Invoking failure block DRIVE....");
-
-        }];
-        
+        [self fetchGoogleDriveDocuments:object];
     } failure:^(NSError *error) {
-        NSLog(@"FAILED!!!");
     }];
 }
 
+-(void)fetchGoogleDriveDocuments:(NSString*) code {
+    NSString* readGoogleDriveURL = @"https://www.googleapis.com/drive/v2/files";
+    NSString *url = [NSString stringWithFormat:@"%@?access_token=%@", readGoogleDriveURL, code];
+    
+    AFHTTPClient* restClient = [[AFHTTPClient alloc] initWithBaseURL:[NSURL URLWithString:readGoogleDriveURL]];
+    //TODO integrate with pipe
+    [restClient getPath:url parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject) {
+        _documents = [[self buildDocumentList:responseObject] copy];
+        [self.tableView reloadData];
+    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        NSLog(@"Invoking failure block DRIVE....");
+    }];
+
+}
+
+-(NSArray*)buildDocumentList:(NSData*)data {
+    NSMutableArray* list = [NSMutableArray array];
+    NSString* responseJSON = [[NSString alloc] initWithData:(NSData *)data encoding:NSUTF8StringEncoding];
+
+    NSDictionary *JSON = [NSJSONSerialization JSONObjectWithData:data
+                                                         options:NSJSONReadingMutableLeaves
+                                                           error:nil];
+
+    for (NSDictionary *item in JSON[@"items"]) {
+        if(![item[@"title"] isEqualToString:@"Untitled"]) {
+            [list addObject:item];
+        }
+    }
+    return [list copy];
+}
 @end

@@ -77,7 +77,7 @@
         config.scopes = @[@"https://www.googleapis.com/auth/drive"];
     }];
     
-    [_restAuthzModule requestAccess:nil success:^(id object) {
+    [_restAuthzModule requestAccessSuccess:^(id object) {
         [self fetchGoogleDriveDocuments:object];
     } failure:^(NSError *error) {
     }];
@@ -100,8 +100,6 @@
 
 -(NSArray*)buildDocumentList:(NSData*)data {
     NSMutableArray* list = [NSMutableArray array];
-    NSString* responseJSON = [[NSString alloc] initWithData:(NSData *)data encoding:NSUTF8StringEncoding];
-
     NSDictionary *JSON = [NSJSONSerialization JSONObjectWithData:data
                                                          options:NSJSONReadingMutableLeaves
                                                            error:nil];

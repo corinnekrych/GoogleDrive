@@ -78,33 +78,34 @@
     }];
     
     [_restAuthzModule requestAccessSuccess:^(id object) {
-        [self fetchGoogleDriveDocuments:object];
+        [self fetchGoogleDriveDocuments:_restAuthzModule];
     } failure:^(NSError *error) {
     }];
 }
 
--(void)fetchGoogleDriveDocuments:(NSString*) code {
-    NSString* readGoogleDriveURL = @"https://www.googleapis.com/drive/v2/files";
-    NSString *url = [NSString stringWithFormat:@"%@?access_token=%@", readGoogleDriveURL, code];
+-(void)fetchGoogleDriveDocuments:(id<AGAuthzModule>) authsModule {
+    NSString* readGoogleDriveURL = @"https://www.googleapis.com/drive/v2";
+    NSURL* serverURL = [NSURL URLWithString:readGoogleDriveURL];
+    AGPipeline* googleDocuments = [AGPipeline pipelineWithBaseURL:serverURL];
     
-    AFHTTPClient* restClient = [[AFHTTPClient alloc] initWithBaseURL:[NSURL URLWithString:readGoogleDriveURL]];
-    //TODO integrate with pipe
-    [restClient getPath:url parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject) {
-        _documents = [[self buildDocumentList:responseObject] copy];
-        [self.tableView reloadData];
-    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-        NSLog(@"Invoking failure block DRIVE....");
+    id<AGPipe> documents = [googleDocuments pipe:^(id<AGPipeConfig> config) {
+        [config setName:@"files"];
+        [config setAuthzModule:authsModule];
     }];
-
+    
+    [documents read:^(id responseObject) {
+        _documents = [[self buildDocumentList:responseObject[0]] copy];
+        [self.tableView reloadData];
+    } failure:^(NSError *error) {
+        // when an error occurs... at least log it to the console..
+        NSLog(@"Read: An error occured! \n%@", error);
+    }];
 }
 
--(NSArray*)buildDocumentList:(NSData*)data {
+-(NSArray*)buildDocumentList:(NSDictionary*)items {
     NSMutableArray* list = [NSMutableArray array];
-    NSDictionary *JSON = [NSJSONSerialization JSONObjectWithData:data
-                                                         options:NSJSONReadingMutableLeaves
-                                                           error:nil];
 
-    for (NSDictionary *item in JSON[@"items"]) {
+    for (NSDictionary *item in items[@"items"]) {
         if(![item[@"title"] isEqualToString:@"Untitled"]) {
             [list addObject:item];
         }

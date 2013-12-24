@@ -83,14 +83,14 @@
     }];
 }
 
--(void)fetchGoogleDriveDocuments:(id<AGAuthzModule>) authsModule {
+-(void)fetchGoogleDriveDocuments:(id<AGAuthzModule>) authzModule {
     NSString* readGoogleDriveURL = @"https://www.googleapis.com/drive/v2";
     NSURL* serverURL = [NSURL URLWithString:readGoogleDriveURL];
     AGPipeline* googleDocuments = [AGPipeline pipelineWithBaseURL:serverURL];
     
     id<AGPipe> documents = [googleDocuments pipe:^(id<AGPipeConfig> config) {
         [config setName:@"files"];
-        [config setAuthzModule:authsModule];
+        [config setAuthzModule:authzModule];
     }];
     
     [documents read:^(id responseObject) {

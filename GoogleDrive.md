@@ -43,14 +43,18 @@ Open Xcode, go to GoogleDrive-Info.plist and add an new URL schema entry as show
 ### Step1: request access token, get an access code 
 - The app calls authorization URL _https://accounts.google.com/o/oauth2/auth_ 
 - The user is prompted to authenticate and authorize
+
+## Step2: user login & consent
 - Once successfully authenticated and granted access, the app is given an __access code__
 
-### Step2: Exchange access code for access token
+### Step3: Exchange access code for access token
 - Doing a call to _https://accounts.google.com/o/oauth2/token_
 - Access code get exchanged with access token
 
-### Step3: Call Google Drive API
+### Step4: Call Google Drive API
 Once authorization is done, you can do anything you wish, refer to the [Google Drive API](https://developers.google.com/drive/v2/reference/).
+
+![Google OAuth2](https://github.com/aerogear/aerogear-ios-cookbook/raw/master/GoogleDrive/GoogleDrive/Resources/images/OAuth2_flow.png "Google OAuth2")
 
 ## AeroGear OAuth2
 
@@ -116,7 +120,7 @@ In AGViewController.m:
 [1]: configuration with all required URLs and endpoints.
 
 
-[2]: requestAccessSuccess:failure: is the method dealing with Step1/Step2.
+[2]: requestAccessSuccess:failure: is the method dealing with all the steps needed to authorize.
 
 
 [3]: once popup has been answered, go back to GoogleDrive app and notified AeroGear framework. If this method is not well implemented, the browser won't be able to callback the application. Back to the app, access code is excahnge with access token (step 2).
